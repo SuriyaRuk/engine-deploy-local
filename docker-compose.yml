@@ -1,45 +1,36 @@
+
 services:
-  postgres:
-    image: postgres:latest
+  pocketbase:
+    image: spectado/pocketbase:latest
     volumes:
-      - db_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - ./pocketbase_data:/pb_data
     ports:
-      - "5432:5432"
-    networks:
-      - default
-    deploy:
-      restart_policy:
-        condition: on-failure
+      - "8090:8090"
+    restart: always
 
   redis:
     image: redis:7.2.4
     ports:
       - "6379:6379"
     depends_on:
-      - postgres
-    deploy:
-      restart_policy:
-        condition: on-failure
+      - pocketbase
+    restart: always
 
   thirdweb:
     image: thirdweb/engine:v2.1.42 # always use the versioned image instead of latest, see readme for more info
     environment:
-      - POSTGRES_CONNECTION_URL=postgresql://postgres:postgres@host.docker.internal:5432/postgres?sslmode=disable&connection_limit=10
+      - DATABASE_URL=http://host.docker.internal:8090
       - REDIS_URL=redis://host.docker.internal:6379
-    env_file:
-      - ./.env
+      - THIRDWEB_API_SECRET_KEY=Lwty4iJ2ebBPcS1ZmaoTaK-tDCjhHVyvJoEolfpEo6wLFYp3AF6vPPA7LsIsahPv5M3HTAlxaMNZfye1QZJ9ow # from portal
+      - ADMIN_WALLET_ADDRESS=0x424f24742E9a4e668d601DE15F507478eB690Acb # from portal
+      - ENGINE_URL="https://jib-3rd-node.ruk.solutions"
+      - ENABLE_HTTPS="false"
+      - ENCRYPTION_PASSWORD=true
+      #env_file:
+      #- ./.env
     ports:
       - "3005:3005"
     depends_on:
-      - postgres
+      - pocketbase
       - redis
-    deploy:
-      restart_policy:
-        condition: on-failure
-
-volumes:
-  db_data:
+    restart: always
